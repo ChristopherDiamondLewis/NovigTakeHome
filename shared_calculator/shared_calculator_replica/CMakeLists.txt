@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 
-set(SERVICE "calc_replica")
-set(SERVICE_LIBRARY "calc_replica_library")
+set(SERVICE "shared_calculator_replica")
+set(SERVICE_LIBRARY "shared_calculator_replica_library")
 
 # gRPC/Protobuf dependency (use pkg-config provided by ubuntu package)
 find_package(PkgConfig REQUIRED)
@@ -38,7 +38,7 @@ add_custom_command(
 
 add_custom_target(proto_gen_replica ALL
     DEPENDS ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
-add_library(${SERVICE_LIBRARY} ${ALL_SOURCES} ${PROTO_SRC} ${PROTO_HDR} ${GRPC_SRC} ${GRPC_HDR})
+add_library(${SERVICE_LIBRARY} ${ALL_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
 
 # Make the local headers visible to targets built from this directory so
 # includes like <workerFunctions.h> resolve during compilation.

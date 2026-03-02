@@ -7,9 +7,9 @@ RUN apt-get update && \
         cmake build-essential protobuf-compiler-grpc libgrpc++-dev
         
 
-WORKDIR /calc_replica
+WORKDIR /shared_calculator_replica
 # copy whole project so subdirs can build libraries
-COPY calc_replica .
+COPY ./shared_calculator_replica .
 
 # build just the replica service
 RUN mkdir -p build && \

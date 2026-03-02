@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 
-set(SERVICE "calc_leader")
-set(SERVICE_LIBRARY "calc_leader_library")
+set(SERVICE "shared_calculator_leader")
+set(SERVICE_LIBRARY "shared_calculator_leader_library")
 
 # simple gRPC/Protobuf dependency using pkg-config from Ubuntu package
 find_package(PkgConfig REQUIRED)
@@ -40,7 +40,7 @@ add_custom_command(
 add_custom_target(proto_gen_leader ALL
     DEPENDS ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
 
-add_library(${SERVICE_LIBRARY} ${ALL_SOURCES} ${PROTO_SRC} ${PROTO_HDR} ${GRPC_SRC} ${GRPC_HDR})
+add_library(${SERVICE_LIBRARY} ${ALL_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
 
 # Make the local headers visible to targets built from this directory so
 # includes like <workerFunctions.h> resolve during compilation.

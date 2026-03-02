@@ -6,9 +6,9 @@ RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         cmake build-essential protobuf-compiler-grpc libgrpc++-dev
 
-WORKDIR /calc_leader
+WORKDIR /shared_calculator_leader
 # copy whole project so subdirs can build libraries
-COPY ./calc_leader .
+COPY ./shared_calculator_leader .
 
 # build just the leader service
 RUN mkdir -p build && \

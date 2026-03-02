@@ -1,14 +1,14 @@
 services:
-  calc_leader:
+  shared_calculator_leader:
     build:
       context: .
-      dockerfile: calc_leader/Dockerfile
+      dockerfile: shared_calculator_leader/Dockerfile
     # keep container alive without executing binary
     command: ["tail", "-f", "/dev/null"]
 
-  calc_replica:
+  shared_calculator_replica:
     build:
       context: .
-      dockerfile: calc_replica/Dockerfile
+      dockerfile: shared_calculator_replica/Dockerfile
     # keep container alive without executing binary
     command: ["tail", "-f", "/dev/null"]

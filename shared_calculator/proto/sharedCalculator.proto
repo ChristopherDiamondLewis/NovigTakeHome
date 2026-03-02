@@ -13,4 +13,4 @@ message GetUpdatesResponse {
   repeated Event events = 2;
 }
 
-message Event { uint64 index = 1; string op = 2; int64 arg = 3; }
+message Event { uint64 eventindex = 1; string operation = 2; int64 argument = 3; }
