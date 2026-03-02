@@ -1,17 +1,17 @@
-# simple container that builds the leader service using cmake
+# Change FROM ubuntu:22.04 to include more deps upfront
 FROM ubuntu:22.04
 
-# install build tools
+# Add missing deps: git, clang (compiler)
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        cmake build-essential protobuf-compiler-grpc libgrpc++-dev
+        cmake build-essential protobuf-compiler-grpc libgrpc++-dev libprotobuf-dev pkg-config
 
-WORKDIR /shared_calculator_leader
-# copy whole project so subdirs can build libraries
-COPY ./shared_calculator_leader .
+# Copy ENTIRE shared_calculator dir (proto, leader, replica all needed)
+WORKDIR /leader_app
+COPY . .
 
-# build just the leader service
+# build services (currently both leader and replica, but we can split this up if needed)
 RUN mkdir -p build && \
     cd build && \
     cmake .. && \
-    make -j4
+    make -j8
