@@ -12,15 +12,15 @@ class shared_calculator_bridge : public sharedcalculator::Leader::Service {
       const std::shared_ptr<Leader> calculatorLeader);
   virtual ~shared_calculator_bridge() = default;
 
-  grpc::Status GetUpdates(
-      grpc::ServerContext* context,
-      const sharedcalculator::GetUpdatesRequest* request,
-      sharedcalculator::GetUpdatesResponse* response) override;
-
   grpc::Status GetMostRecentValue(
       grpc::ServerContext* context,
       const sharedcalculator::GetMostRecentValueRequest* request,
       sharedcalculator::GetMostRecentValueResponse* response) override;
+
+  grpc::Status StreamUpdates(
+      grpc::ServerContext* context,
+      const sharedcalculator::GetUpdatesRequest* request,
+      grpc::ServerWriter<sharedcalculator::Event>* writer) override;
 
  private:
   std::shared_ptr<Leader> d_calculatorLeader;

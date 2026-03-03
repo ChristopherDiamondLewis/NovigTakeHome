@@ -19,7 +19,7 @@ int main() {
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
 
   std::thread updateLeaderThread(
-      [&leaderCalculator]() { leaderCalculator->Run(); });
+      [&leaderCalculator]() -> void { leaderCalculator->Run(); });
 
   server->Wait();
   updateLeaderThread.join();

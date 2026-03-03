@@ -3,17 +3,13 @@ syntax = "proto3";
 package sharedcalculator;
 
 service Leader {
-  rpc GetUpdates(GetUpdatesRequest) returns (GetUpdatesResponse);
+  rpc StreamUpdates(GetUpdatesRequest) returns (stream Event);
   rpc GetMostRecentValue(GetMostRecentValueRequest) returns (GetMostRecentValueResponse);
+
 }
 
 message GetUpdatesRequest { uint64 from_index = 1; }
 message GetMostRecentValueRequest { }
-
-message GetUpdatesResponse {
-  uint64 latest_index = 1;
-  repeated Event events = 2;
-}
 
 message GetMostRecentValueResponse {
   int64 current_value = 1;

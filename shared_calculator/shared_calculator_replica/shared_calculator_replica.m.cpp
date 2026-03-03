@@ -1,5 +1,4 @@
 #include <grpcpp/grpcpp.h>
-#include <shared_calculator_leader.h>
 #include <shared_calculator_replica.h>
 
 #include <iostream>
