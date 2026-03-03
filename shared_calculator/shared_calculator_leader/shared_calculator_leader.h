@@ -27,13 +27,34 @@ using Events = std::vector<Event>;
 
 class Leader {
  public:
+  /**
+   * @brief Initializes the leader with value 0 and empty event history.
+   * @note ::Leader() initializes its random event, argument & operation
+   * generators.
+   */
   Leader();
   ~Leader() = default;
 
+  /**
+   * @brief Runs the leader, continuously generating random events, applying
+   * them to its state, and adding them to the event log.
+   */
   void Run();
 
+  /**
+   * @brief Blocks until new events are available after the given index or
+   * timeout expires.
+   * @param fromIndex Start fetching events after this index (0 = all events)
+   * @param timeout Maximum time to wait
+   * @return std::optional<std::vector<Event>>, or std::nullopt on timeout
+   */
   std::optional<Events> WaitForUpdatesFromIndex(
       const size_t fromIndex, const std::chrono::milliseconds timeout);
+
+  /**
+   * @brief Returns the current value and the index of the most recent event.
+   * @return Pair of (current_value, latest_event_index)
+   */
   std::pair<int64_t, size_t> GetCurrentValueAndIndex() const;
 
  private:

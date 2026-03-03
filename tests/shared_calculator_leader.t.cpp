@@ -3,95 +3,103 @@
 
 #include <thread>
 
+/**
+ * Unit tests for the Leader class public interface.
+ * Just tests basic functionality of the Leader class
+ */
+
 TEST(SharedCalculatorLeaderTest, RunSuccessfullyCreatesAndSubmitsEvents) {
+  // GIVEN: A leader instance
   Calculator::Leader leaderUnderTest;
 
-  // Spawn Run() in a thread
+  // WHEN: Run() executes in a background thread for 3 seconds
   std::thread runThread(
       [&leaderUnderTest]() { EXPECT_NO_THROW(leaderUnderTest.Run()); });
-
-  // Let it run for a bit
   std::this_thread::sleep_for(std::chrono::seconds(3));
 
-  // Check that events were created
+  // THEN: Events should have been created and state should have changed
   const auto [value1, index1] = leaderUnderTest.GetCurrentValueAndIndex();
-  EXPECT_GT(index1, 0);  // Should have at least one event
-  EXPECT_NE(value1, 0);  // Value should have changed
+  EXPECT_GT(index1, 0);
+  EXPECT_NE(value1, 0);
 
-  // Can't join because Run() is infinite, so detach
   runThread.detach();
 }
 
 TEST(SharedCalculatorLeaderTest,
      GetCurrentValueAndIndexReturnsDifferentValuesAsEventsAreApplied) {
+  // GIVEN: A leader instance
   Calculator::Leader leaderUnderTest;
 
-  // Initially, the value should be 0 and index should be 0
+  // WHEN: We get the initial state
   auto [initialValue, initialIndex] = leaderUnderTest.GetCurrentValueAndIndex();
+
+  // THEN: Both should start at 0
   EXPECT_EQ(initialValue, 0);
   EXPECT_EQ(initialIndex, 0);
 
-  // After running the leader for a bit, the value and index should have updated
+  // WHEN: The leader runs for 1 second
   std::thread leaderThread(
       [&leaderUnderTest]() { EXPECT_NO_THROW(leaderUnderTest.Run()); });
-  std::this_thread::sleep_for(
-      std::chrono::seconds(1));  // Let the leader generate some events
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
+  // THEN: Value and index should have updated
   auto [updatedValue, updatedIndex] = leaderUnderTest.GetCurrentValueAndIndex();
-  // Sometimes the values will be the same, for the purposes of this take home
-  // we can ignore that possibility
   EXPECT_NE(updatedValue, initialValue)
-      << "Could possible be false positive since values might coincidentally "
+      << "Could possibly be false positive since values might coincidentally "
          "be the same";
-  EXPECT_GT(updatedIndex,
-            initialIndex);  // Index should have incremented from initial
+  EXPECT_GT(updatedIndex, initialIndex);
 
-  leaderThread.detach();  // Detach the thread since Run() is an infinite loop
+  leaderThread.detach();
 }
 
 TEST(SharedCalculatorLeaderTest,
      WaitForUpdatesFromIndexReturnsEmptyIfTimeoutReached) {
+  // GIVEN: A leader instance in a background thread
   Calculator::Leader leaderUnderTest;
   std::thread leaderThread(
       [&leaderUnderTest]() { EXPECT_NO_THROW(leaderUnderTest.Run()); });
 
-  // Wait for updates from index 0 with a short timeout, should return nullopt
-  // since no events have been generated yet
+  // WHEN: We wait for updates with 0ms timeout immediately
   auto updates =
       leaderUnderTest.WaitForUpdatesFromIndex(0, std::chrono::milliseconds(0));
+
+  // THEN: Should return empty (timeout expires before any events)
   EXPECT_FALSE(updates.has_value());
 
-  leaderThread.detach();  // Detach the thread since Run() is an infinite loop
+  leaderThread.detach();
 }
 
 TEST(SharedCalculatorLeaderTest,
      WaitForUpdatesFromIndexReturnsEmptyIfLeaderNeverRuns) {
+  // GIVEN: A leader instance that does not run
   Calculator::Leader leaderUnderTest;
 
-  // Will not matter how long we wait, should return nullopt since leader is not
-  // running and thus will never generate events
+  // WHEN: We wait for updates with a 100ms timeout
   auto updates = leaderUnderTest.WaitForUpdatesFromIndex(
       0, std::chrono::milliseconds(100));
+
+  // THEN: Should return empty (no events generated)
   EXPECT_FALSE(updates.has_value());
 }
 
 TEST(SharedCalculatorLeaderTest,
      WaitForUpdatesFromIndexReturnsEventsGeneratedAfterGivenIndex) {
+  // GIVEN: A leader running in a background thread
   Calculator::Leader leaderUnderTest;
   std::thread leaderThread(
       [&leaderUnderTest]() { EXPECT_NO_THROW(leaderUnderTest.Run()); });
 
-  // Wait for a bit to let some events be generated
+  // WHEN: We wait for some events to be generated
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  // Get the current index
+  // AND: We get the current state and wait for new events
   auto [currentValue, currentIndex] = leaderUnderTest.GetCurrentValueAndIndex();
-
-  // Wait for updates from the current index with a reasonable timeout
   auto updates = leaderUnderTest.WaitForUpdatesFromIndex(
       currentIndex, std::chrono::milliseconds(500));
-  EXPECT_TRUE(updates.has_value());
-  EXPECT_GT(updates->size(), 0);  // Should have at least one new event
 
-  leaderThread.detach();  // Detach the thread since Run() is an infinite loop
+  // THEN: Should have returned new events after the current index
+  EXPECT_TRUE(updates.has_value());
+  EXPECT_GT(updates->size(), 0);
+
+  leaderThread.detach();
 }

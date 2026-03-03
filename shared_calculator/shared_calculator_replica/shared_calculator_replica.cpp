@@ -32,9 +32,6 @@ void Replica::Run() {
   int backoffMs{STARTING_BACKOFF_MS};
 
   while (true) {
-    // Everytime we try to connect (even the first connection), we should get
-    // the most recent value and index from the leader in case we missed any
-    // events while we were disconnected
     const auto mostRecentValue = GetMostRecentValue();
     if (mostRecentValue.has_value()) {
       const auto [leaderValue, leaderIndex] = mostRecentValue.value();
@@ -60,7 +57,7 @@ void Replica::Run() {
 
     while (streamOfEvents->Read(&event)) {
       if (event.eventindex() != d_lastIndexGotten) {
-        std::cout << "Out-of-order event: expected " << d_lastIndexGotten
+        std::cout << "Out of order event: expected " << d_lastIndexGotten
                   << " but got " << event.eventindex() << ". Re-syncing..."
                   << std::endl;
         break;  // Break stream, trigger GetMostRecentValue() on next loop

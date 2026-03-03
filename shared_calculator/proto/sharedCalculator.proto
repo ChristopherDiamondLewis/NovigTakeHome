@@ -2,17 +2,34 @@ syntax = "proto3";
 
 package sharedcalculator;
 
+// Leader service for distributed state replication.
 service Leader {
+  // StreamUpdates: Continuously streams events from the given index to the client.
   rpc StreamUpdates(GetUpdatesRequest) returns (stream Event);
+
+  // GetMostRecentValue: Returns the current calculator value and latest event index.
   rpc GetMostRecentValue(GetMostRecentValueRequest) returns (GetMostRecentValueResponse);
 }
 
-message GetUpdatesRequest { uint64 from_index = 1; }
-message GetMostRecentValueRequest { }
+message GetUpdatesRequest {
+  // Start fetching events after this index (0 = all events)
+  uint64 from_index = 1;
+}
+message GetMostRecentValueRequest {}
 
 message GetMostRecentValueResponse {
+  // Current value of the leader calculator
   int64 current_value = 1;
+  // Index of the most recent event
   uint64 latest_index = 2;
 }
 
-message Event { uint64 eventindex = 1; string operation = 2; int64 argument = 3; }
+// Immutable event representing a calculator operation.
+message Event {
+  // Sequential index of this event in the leader's history
+  uint64 eventindex = 1;
+  // Operation name: "ADD", "SUBTRACT", "MULTIPLY", or "DIVIDE"
+  string operation = 2;
+  // Operand (some number for operation to be performed on)
+  int64 argument = 3;
+}
