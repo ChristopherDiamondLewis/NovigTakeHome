@@ -31,23 +31,26 @@ class Leader {
   ~Leader() = default;
 
   void Run();
-  void SubmitEvent(Event event);
-  Event CreateRandomEvent();
+
   std::optional<Events> WaitForUpdatesFromIndex(
       const size_t fromIndex, const std::chrono::milliseconds timeout);
   std::pair<int64_t, size_t> GetCurrentValueAndIndex() const;
 
  private:
   Events GetUpdatesFromWithLock(const size_t fromIndex) const;
+  void SubmitEvent(Event event);
+  Event CreateRandomEvent();
   void ApplyCalculation(const Event& event);
 
  private:
   int64_t d_currValue;
   Events d_events;
-  std::vector<std::string> d_supportedOperations{"ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"};
+  std::vector<std::string> d_supportedOperations{"ADD", "SUBTRACT", "MULTIPLY",
+                                                 "DIVIDE"};
   std::mt19937 d_rng;
   std::uniform_int_distribution<size_t> d_opDistribution;
   std::uniform_int_distribution<int64_t> d_argDistribution;
+  std::uniform_int_distribution<int64_t> d_eventGenerationMsDistribution;
   std::condition_variable d_updates_available_cv;
   mutable std::mutex d_mutex;
 };

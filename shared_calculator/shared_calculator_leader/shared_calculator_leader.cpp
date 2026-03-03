@@ -12,11 +12,13 @@ Leader::Leader()
     : d_currValue(0),
       d_rng(std::random_device{}()),
       d_opDistribution(0, 3),
-      d_argDistribution(1, 100) {}
+      d_argDistribution(1, 100),
+      d_eventGenerationMsDistribution(10, 1000) {}
 
 void Leader::Run() {
   while (true) {
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(d_eventGenerationMsDistribution(d_rng)));
     const auto event = CreateRandomEvent();
     SubmitEvent(event);
     const auto valAndIndex = GetCurrentValueAndIndex();
@@ -26,7 +28,6 @@ void Leader::Run() {
 
 std::optional<Events> Leader::WaitForUpdatesFromIndex(
     const size_t fromIndex, const std::chrono::milliseconds timeout) {
-
   std::unique_lock<std::mutex> lock(d_mutex);
 
   const bool updates_available = d_updates_available_cv.wait_for(
@@ -60,9 +61,9 @@ void Leader::SubmitEvent(Event event) {
 }
 
 void Leader::ApplyCalculation(const Event &event) {
-  // Note: We do not handle int64_t overflow/underflow for ADD, SUBTRACT, MULTIPLY.
-  // For production, would add bounds checking or use arbitrary precision arithmetic.
-  // Division by zero is handled below.
+  // Note: We do not handle int64_t overflow/underflow for ADD, SUBTRACT,
+  // MULTIPLY. For production, would add bounds checking or use arbitrary
+  // precision arithmetic. Division by zero is handled below.
   if (event.d_operation == "ADD") {
     d_currValue += event.d_argument;
   } else if (event.d_operation == "SUBTRACT") {
