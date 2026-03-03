@@ -4,13 +4,13 @@ services:
       context: .
       dockerfile: shared_calculator/shared_calculator_leader/Dockerfile
     ports:
-      - "50051:50051"  # Expose port so replica can reach it
-    command: ["tail", "-f", "/dev/null"]  # Keep alive for debugging
+      - "50051:50051"
+    command: ["tail", "-f", "/dev/null"]
 
   shared_calculator_replica:
     build:
       context: .
       dockerfile: shared_calculator/shared_calculator_replica/Dockerfile
     depends_on:
-      - shared_calculator_leader  # Wait for leader to start first
-    command: ["tail", "-f", "/dev/null"]  # Keep alive for debugging
+      - shared_calculator_leader
+    command: ["tail", "-f", "/dev/null"]
