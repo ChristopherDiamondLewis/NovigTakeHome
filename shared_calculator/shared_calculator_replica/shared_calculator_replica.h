@@ -15,8 +15,7 @@ class Replica {
   Replica(std::unique_ptr<sharedcalculator::Leader::Stub> stub);
   ~Replica() = default;
 
-  bool Run();
-  std::vector<Event> getEventsFromIndex(const size_t fromIndex) const;
+  void Run();
   std::optional<std::pair<int64_t, size_t>> GetMostRecentValue() const;
   void applyEvent(const Event event);
 

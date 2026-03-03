@@ -3,6 +3,7 @@
 #include <sharedCalculator.grpc.pb.h>
 #include <sharedCalculator.pb.h>
 
+#include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -21,21 +22,28 @@ struct Event {
   }
 };
 
+using Events = std::vector<Event>;
+
 class Leader {
  public:
   Leader();
   ~Leader() = default;
 
-  bool Run();
-  void SubmitEvent(const Event event);
+  void Run();
+  void SubmitEvent(Event event);
   Event CreateRandomEvent();
-  std::vector<Event> GetUpdatesFrom(const size_t fromIndex);
+  std::optional<Events> WaitForUpdatesFromIndex(
+      const size_t fromIndex, const std::chrono::milliseconds timeout);
   std::pair<int64_t, size_t> GetCurrentValueAndIndex() const;
 
  private:
+  Events GetUpdatesFromWithLock(const size_t fromIndex) const;
+  void ApplyCalculation(const Event& event);
+
+ private:
   int64_t d_currValue;
-  std::vector<Event> d_events;
-  size_t d_lastWrittenIndex;
+  Events d_events;
+  std::condition_variable d_updates_available_cv;
   mutable std::mutex d_mutex;
 };
 }  // namespace Calculator

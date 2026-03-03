@@ -4,49 +4,70 @@
 
 #include <chrono>
 #include <iostream>
+#include <optional>
 #include <thread>
 #include <vector>
+
+namespace {
+void HandleGrpcStatus(const grpc::Status& status,
+                      const std::string& userErrorMessage = "") {
+  if (not status.ok()) {
+    std::cerr << "gRPC error: " << status.error_message()
+              << ", error code: " << status.error_code()
+              << ", user error message: " << userErrorMessage << std::endl;
+  }
+}
+}  // namespace
 
 namespace Calculator {
 
 Replica::Replica(std::unique_ptr<sharedcalculator::Leader::Stub> stub)
     : d_currValue(0), d_lastIndexGotten(0), d_stub(std::move(stub)) {}
 
-bool Replica::Run() {
-  std::cout << "Polling for events" << std::endl;
+void Replica::Run() {
+  std::cout << "starting to stream updates from leader" << std::endl;
 
-  // On startup, get the most recent event and current value to resume from
-  // there
-  const auto mostRecentValue = GetMostRecentValue();
-  if (mostRecentValue.has_value()) {
-    const auto [startingValue, startingIndex] = mostRecentValue.value();
-    d_currValue = startingValue;
-    d_lastIndexGotten = startingIndex;
-    std::cout << "Replica initialized to value: " << d_currValue
-              << " at event index: " << d_lastIndexGotten << std::endl;
-  }
+  constexpr int STARTING_BACKOFF_MS = 10;
+  constexpr int MAX_BACKOFF_MS = 1000;
+  int backoffMs{STARTING_BACKOFF_MS};
 
-  static constexpr int STARTING_BACKOFF_MS = 10;
-  int backoffMs = STARTING_BACKOFF_MS;
   while (true) {
-    const auto events = getEventsFromIndex(d_lastIndexGotten);
+    // Everytime we try to connect (even the first connection), we should get
+    // the most recent value and index from the leader in case we missed any
+    // events while we were disconnected
+    const auto mostRecentValue = GetMostRecentValue();
+    if (mostRecentValue.has_value()) {
+      const auto [leaderValue, leaderIndex] = mostRecentValue.value();
+      d_currValue = leaderValue;
+      d_lastIndexGotten = leaderIndex;
+      std::cout << "Replica initialized to value: " << d_currValue
+                << " at event index: " << d_lastIndexGotten << std::endl;
 
-    if (events.empty()) {
-      std::cout << "No new events, backing off for " << backoffMs << " ms"
-                << std::endl;
+    } else {
+      // Leader unreachable, backoff and retry
       std::this_thread::sleep_for(std::chrono::milliseconds(backoffMs));
-      backoffMs = backoffMs << 1;  // exponential backoff
+      backoffMs = std::min(backoffMs * 2, MAX_BACKOFF_MS);
       continue;
     }
 
-    backoffMs = STARTING_BACKOFF_MS;
+    grpc::ClientContext context;
+    sharedcalculator::GetUpdatesRequest request;
+    request.set_from_index(d_lastIndexGotten);
 
-    for (const auto& event : events) {
-      applyEvent(event);
+    auto streamOfEvents = d_stub->StreamUpdates(&context, request);
+
+    sharedcalculator::Event event;
+    while (streamOfEvents->Read(&event)) {
+      applyEvent({.d_operation = event.operation(),
+                  .d_argument = event.argument(),
+                  .d_eventIndex = event.eventindex()});
+      // reset backoff since we successfully got an event!!!!
+      backoffMs = STARTING_BACKOFF_MS;
     }
-  }
 
-  return true;
+    HandleGrpcStatus(streamOfEvents->Finish(),
+                     "Error streaming updates from leader");
+  }
 }
 
 void Replica::applyEvent(const Event event) {
@@ -60,42 +81,16 @@ void Replica::applyEvent(const Event event) {
   d_lastIndexGotten = event.d_eventIndex + 1;
 }
 
-std::vector<Event> Replica::getEventsFromIndex(const size_t fromIndex) const {
-  std::vector<Event> events;
-  grpc::ClientContext context;
-  sharedcalculator::GetUpdatesResponse response;
-
-  sharedcalculator::GetUpdatesRequest request;
-  request.set_from_index(fromIndex);
-  grpc::Status status = d_stub->GetUpdates(&context, request, &response);
-  if (!status.ok()) {
-    std::cerr << "Error getting updates from leader: " << status.error_message()
-              << std::endl;
-    return events;
-  }
-
-  for (const auto& event : response.events()) {
-    Event replicaEvent{.d_operation = event.operation(),
-                       .d_argument = event.argument(),
-                       .d_eventIndex = event.eventindex()};
-
-    events.push_back(replicaEvent);
-  }
-
-  return events;
-}
-
 std::optional<std::pair<int64_t, size_t>> Replica::GetMostRecentValue() const {
   grpc::ClientContext context;
   sharedcalculator::GetMostRecentValueResponse response;
-
   sharedcalculator::GetMostRecentValueRequest request;
+
   grpc::Status status =
       d_stub->GetMostRecentValue(&context, request, &response);
 
-  if (!status.ok()) {
-    std::cerr << "Error getting most recent value from leader: "
-              << status.error_message() << std::endl;
+  if (not status.ok()) {
+    HandleGrpcStatus(status, "Error getting most recent value from leader");
     return std::nullopt;
   }
 
