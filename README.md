@@ -20,7 +20,7 @@ You can follow the [How to Run](#how-to-run) & [Manual Testing](#manual-testing)
 
 ## Overview
 
-Leader calculator will generate random operations maintaing an in memory data set of `Events`. Multiple replicas consume a gRPC event stream and apply the same operations to stay in sync, like a shared document, but with math and eventual consistancy.
+Leader calculator will generate random operations maintaing an in memory data set of `Events`. Multiple replicas consume a gRPC event stream and apply the same operations to stay in sync, like a shared document, but with math and eventual consistency.
 
 ## Demo
 
@@ -28,7 +28,7 @@ Leader calculator will generate random operations maintaing an in memory data se
 
 [![Watch the demo video](https://img.youtube.com/vi/5Awo9vqemVI/0.jpg)](https://www.youtube.com/watch?v=5Awo9vqemVI)
 
-*[Shared calculator demo](https://www.youtube.com/watch?v=5Awo9vqemVI)*
+*[shared calculator demo](https://www.youtube.com/watch?v=5Awo9vqemVI)*
 
 </div>
 
