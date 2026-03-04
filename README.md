@@ -9,6 +9,7 @@ You can follow the [How to Run](#how-to-run) & [Manual Testing](#manual-testing)
 
 - [Overview](#overview)
 - [How to Run](#how-to-run)
+- [Demo](#demo)
 - [Unit Tests](#unit-tests)
 - [Manual Testing](#manual-testing)
 - [State Machine](#state-machine)
@@ -20,6 +21,16 @@ You can follow the [How to Run](#how-to-run) & [Manual Testing](#manual-testing)
 ## Overview
 
 Leader calculator will generate random operations maintaing an in memory data set of `Events`. Multiple replicas consume a gRPC event stream and apply the same operations to stay in sync, like a shared document, but with math and eventual consistancy.
+
+## Demo
+
+<div align="center">
+
+[![Watch the demo video](https://img.youtube.com/vi/5Awo9vqemVI/0.jpg)](https://www.youtube.com/watch?v=5Awo9vqemVI)
+
+*[Shared calculator demo](https://www.youtube.com/watch?v=5Awo9vqemVI)*
+
+</div>
 
 ## How to Run 
 
