@@ -6,8 +6,6 @@
 #include <thread>
 
 int main() {
-  std::cout << "Hello world, from shared_calculator_leader!" << std::endl;
-
   auto leaderCalculator = std::make_shared<Calculator::Leader>();
   auto gRPCbridge =
       std::make_shared<Calculator::shared_calculator_bridge>(leaderCalculator);
@@ -18,6 +16,7 @@ int main() {
 
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
 
+  std::cout << "Starting leader and gRPC server..." << std::endl;
   std::thread updateLeaderThread(
       [&leaderCalculator]() -> void { leaderCalculator->Run(); });
 

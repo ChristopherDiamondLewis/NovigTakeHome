@@ -4,6 +4,9 @@
 
 namespace Calculator {
 
+std::chrono::milliseconds MAX_TIMEOUT{
+    5000};  // ~5 second timeout for waiting for updates
+
 shared_calculator_bridge::shared_calculator_bridge(
     const std::shared_ptr<Leader> calculatorLeader)
     : d_calculatorLeader(calculatorLeader) {}
@@ -13,12 +16,10 @@ grpc::Status shared_calculator_bridge::StreamUpdates(
     const sharedcalculator::GetUpdatesRequest* request,
     grpc::ServerWriter<sharedcalculator::Event>* writer) {
   size_t fromIndex = request->from_index();
-  const auto timeout = std::chrono::milliseconds(
-      5000);  // ~5 second timeout for waiting for updates
 
   while (not context->IsCancelled()) {
     const auto updatesFromLeader =
-        d_calculatorLeader->WaitForUpdatesFromIndex(fromIndex, timeout);
+        d_calculatorLeader->WaitForUpdatesFromIndex(fromIndex, MAX_TIMEOUT);
 
     if (not updatesFromLeader.has_value())
       continue;  // loop again and wait for updates or cancellation
@@ -29,12 +30,12 @@ grpc::Status shared_calculator_bridge::StreamUpdates(
       eventToWrite.set_argument(update.d_argument);
       eventToWrite.set_eventindex(update.d_eventIndex);
 
-      const bool streamStillOpen = writer->Write(eventToWrite);
-      if (not streamStillOpen) {
+      if (not writer->Write(eventToWrite)) {
         return grpc::Status::OK;  // not an error the client just disconnected
       }
-      fromIndex = update.d_eventIndex + 1;
     }
+    fromIndex = updatesFromLeader.value().back().d_eventIndex +
+                1;  // next index to wait for
   }
   return grpc::Status::OK;
 }
@@ -43,7 +44,6 @@ grpc::Status shared_calculator_bridge::GetMostRecentValue(
     grpc::ServerContext* context,
     const sharedcalculator::GetMostRecentValueRequest* request,
     sharedcalculator::GetMostRecentValueResponse* response) {
-  // return the most recent event from the leader
   const auto [currentValue, currentIndex] =
       d_calculatorLeader->GetCurrentValueAndIndex();
   response->set_current_value(currentValue);

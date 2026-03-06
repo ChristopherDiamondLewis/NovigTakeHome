@@ -1,5 +1,6 @@
 #include <sharedCalculator.grpc.pb.h>
 #include <sharedCalculator.pb.h>
+#include <shared_calculator_common.h>
 #include <shared_calculator_replica.h>
 
 #include <chrono>
@@ -7,17 +8,6 @@
 #include <optional>
 #include <thread>
 #include <vector>
-
-namespace {
-void HandleGrpcStatus(const grpc::Status& status,
-                      const std::string& userErrorMessage = "") {
-  if (not status.ok()) {
-    std::cerr << "gRPC error: " << status.error_message()
-              << ", error code: " << status.error_code()
-              << ", user error message: " << userErrorMessage << std::endl;
-  }
-}
-}  // namespace
 
 namespace Calculator {
 
@@ -36,8 +26,7 @@ void Replica::Run() {
       const auto [leaderValue, leaderIndex] = mostRecentValue.value();
       d_currValue = leaderValue;
       d_lastIndexGotten = leaderIndex;
-      std::cout << "Replica initialized to value: " << d_currValue
-                << " at event index: " << d_lastIndexGotten << std::endl;
+      std::cout << "Replica initialized to value: " << d_currValue << std::endl;
 
     } else {
       // Leader unreachable, backoff and retry
@@ -70,37 +59,16 @@ void Replica::Run() {
       backoffMs = STARTING_BACKOFF_MS;
     }
 
-    HandleGrpcStatus(streamOfEvents->Finish(),
-                     "Error streaming updates from leader");
+    Utility::HandleGrpcStatus(streamOfEvents->Finish(),
+                              "Error streaming updates from leader");
   }
 }
 
-void Replica::ApplyEvent(const Event event) {
+void Replica::ApplyEvent(const Event &event) {
   std::cout << "Applying event: " << event << std::endl;
-  ApplyCalculation(event);
+  d_currValue = Calculator::Utility::ApplyCalculation(event, d_currValue);
+  std::cout << "New value : " << d_currValue << std::endl;
   d_lastIndexGotten = event.d_eventIndex + 1;
-}
-
-void Replica::ApplyCalculation(const Event& event) {
-  // Note: We do not handle int64_t overflow/underflow for ADD, SUBTRACT,
-  // MULTIPLY. For production, would add bounds checking or use arbitrary
-  // precision arithmetic. Division by zero is handled below.
-  if (event.d_operation == "ADD") {
-    d_currValue += event.d_argument;
-  } else if (event.d_operation == "SUBTRACT") {
-    d_currValue -= event.d_argument;
-  } else if (event.d_operation == "MULTIPLY") {
-    d_currValue *= event.d_argument;
-  } else if (event.d_operation == "DIVIDE") {
-    if (event.d_argument != 0) {
-      d_currValue /= event.d_argument;
-    } else {
-      std::cerr << "Division by zero attempted, skipping" << std::endl;
-    }
-  } else {
-    std::cerr << "Unknown operation: " << event.d_operation << std::endl;
-  }
-  std::cout << "Current value: " << d_currValue << std::endl;
 }
 
 std::optional<std::pair<int64_t, size_t>> Replica::GetMostRecentValue() const {
@@ -112,7 +80,8 @@ std::optional<std::pair<int64_t, size_t>> Replica::GetMostRecentValue() const {
       d_stub->GetMostRecentValue(&context, request, &response);
 
   if (not status.ok()) {
-    HandleGrpcStatus(status, "Error getting most recent value from leader");
+    Utility::HandleGrpcStatus(status,
+                              "Error getting most recent value from leader");
     return std::nullopt;
   }
 

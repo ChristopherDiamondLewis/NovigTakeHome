@@ -5,8 +5,6 @@
 #include <thread>
 
 int main() {
-  std::cout << "Hello world, from shared_calculator_replica!" << std::endl;
-
   std::string leaderHostName{"shared_calculator_leader:50051"};
 
   // create gRPC channel and stub to communicate with leader

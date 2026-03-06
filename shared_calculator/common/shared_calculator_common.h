@@ -16,10 +16,12 @@ struct Event {
   size_t d_eventIndex{0};
 
   friend std::ostream& operator<<(std::ostream& os, const Event& event) {
-    if(event.d_operation == "DIVIDE" && event.d_argument == 0) {
-      os << event.d_operation << " " << event.d_argument << " (division by zero)";
-    } else if (event.d_operation == "POWER_OF_TWO" or event.d_operation == "SQUARE_ROOT") {
-        os << event.d_operation;
+    if (event.d_operation == "DIVIDE" && event.d_argument == 0) {
+      os << event.d_operation << " " << event.d_argument
+         << " (division by zero)";
+    } else if (event.d_operation == "POWER_OF_TWO" or
+               event.d_operation == "SQUARE_ROOT") {
+      os << event.d_operation;
     } else {
       os << event.d_operation << " " << event.d_argument;
     }
